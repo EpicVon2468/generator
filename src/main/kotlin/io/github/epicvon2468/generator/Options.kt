@@ -26,13 +26,16 @@ data class Option<T>(
 	val resolver: (String) -> T
 ): ReadOnlyProperty<Any?, T> {
 
-	var prevProp: String? = null
-	var result: T? = null
+	var cachedProp: String? = null
+	var cachedValue: T? = null
 
 	override fun getValue(thisRef: Any?, property: KProperty<*>): T {
 		val prop: String = System.getProperty("generator.option.$name", default)
-		if (prevProp == prop) return result!!
-		return resolver(prop).also { result = it }
+		if (cachedProp == prop) return cachedValue!!
+		return resolver(prop).also { value: T ->
+			cachedProp = prop
+			cachedValue = value
+		}
 	}
 
 	companion object {
