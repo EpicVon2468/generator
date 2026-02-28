@@ -1,11 +1,20 @@
 package io.github.epicvon2468.generator
 
+import java.io.File
+
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 data object Options {
 
-	val projectName: String by Option.identity("name", "example")
+	val projectName: String by Option.string(
+		name = "name",
+		default = { "example" }
+	)
+	val outputDir: File by Option.file(
+		name = "out",
+		default = ::projectName
+	)
 
 	@JvmStatic
 	fun parse(args: Array<String>): Unit = args.forEach { arg: String ->
@@ -22,7 +31,7 @@ data object Options {
 
 data class Option<V>(
 	val name: String,
-	val default: String,
+	val default: () -> String,
 	val resolver: (String) -> V
 ): ReadOnlyProperty<Any?, V> {
 
@@ -30,7 +39,7 @@ data class Option<V>(
 	private var cachedValue: V? = null
 
 	override fun getValue(thisRef: Any?, property: KProperty<*>): V {
-		val prop: String = System.getProperty("generator.option.$name", default)
+		val prop: String = System.getProperty("generator.option.$name", default())
 		if (cachedProp == prop) return cachedValue!!
 		return resolver(prop).also { value: V ->
 			cachedProp = prop
@@ -41,6 +50,17 @@ data class Option<V>(
 	companion object {
 
 		@JvmStatic
-		fun identity(name: String, default: String): Option<String> = Option(name, default) { it }
+		fun string(
+			name: String,
+			default: () -> String,
+			resolver: (String) -> String = { it }
+		): Option<String> = Option(name, default, resolver)
+
+		@JvmStatic
+		fun file(
+			name: String,
+			default: () -> String,
+			resolver: (String) -> File = { File(it).absoluteFile }
+		): Option<File> = Option(name, default, resolver)
 	}
 }
