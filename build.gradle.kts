@@ -28,6 +28,12 @@ tasks.withType<JavaExec> {
 	jvmArgs("-XX:+UseCompactObjectHeaders", "--enable-native-access=ALL-UNNAMED")
 }
 
+tasks.jar {
+	manifest {
+		attributes("Main-Class" to "${project.group}.MainKt")
+	}
+}
+
 kotlin {
 	kotlinDaemonJvmArgs = listOf("-XX:+UseCompactObjectHeaders", "--enable-native-access=ALL-UNNAMED")
 	jvmToolchain {
