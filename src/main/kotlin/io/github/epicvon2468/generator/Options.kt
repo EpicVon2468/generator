@@ -18,12 +18,6 @@ data object Options {
 		if (split == -1) return arg to "true"
 		return arg.substring(0..<split) to arg.substring((split + 1)..<arg.length)
 	}
-
-	operator fun provideDelegate(thisRef: Any?, property: KProperty<*>): ReadOnlyProperty<Any?, String> {
-		val name: String = property.name
-		val lazy: Lazy<String> = lazy { System.getProperty("generator.option.$name", "") }
-		return ReadOnlyProperty(lazy::getValue)
-	}
 }
 
 data class Option<T>(
