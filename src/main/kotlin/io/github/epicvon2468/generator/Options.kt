@@ -20,19 +20,19 @@ data object Options {
 	}
 }
 
-data class Option<T>(
+data class Option<V>(
 	val name: String,
 	val default: String,
-	val resolver: (String) -> T
-): ReadOnlyProperty<Any?, T> {
+	val resolver: (String) -> V
+): ReadOnlyProperty<Any?, V> {
 
-	var cachedProp: String? = null
-	var cachedValue: T? = null
+	private var cachedProp: String? = null
+	private var cachedValue: V? = null
 
-	override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+	override fun getValue(thisRef: Any?, property: KProperty<*>): V {
 		val prop: String = System.getProperty("generator.option.$name", default)
 		if (cachedProp == prop) return cachedValue!!
-		return resolver(prop).also { value: T ->
+		return resolver(prop).also { value: V ->
 			cachedProp = prop
 			cachedValue = value
 		}
