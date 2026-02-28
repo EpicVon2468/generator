@@ -1,8 +1,11 @@
 package io.github.epicvon2468.generator
 
+import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 data object Options {
+
+	val projectName: String by Option.identity("name", "example")
 
 	@JvmStatic
 	fun parse(args: Array<String>): Unit = args.forEach { arg: String ->
@@ -16,5 +19,31 @@ data object Options {
 		return arg.substring(0..<split) to arg.substring((split + 1)..<arg.length)
 	}
 
-	operator fun getValue(`class`: Options, property: KProperty<*>): String? = System.getProperty("generator.option.${property.name}")
+	operator fun provideDelegate(thisRef: Any?, property: KProperty<*>): ReadOnlyProperty<Any?, String> {
+		val name: String = property.name
+		val lazy: Lazy<String> = lazy { System.getProperty("generator.option.$name", "") }
+		return ReadOnlyProperty(lazy::getValue)
+	}
+}
+
+data class Option<T>(
+	val name: String,
+	val default: String,
+	val resolver: (String) -> T
+): ReadOnlyProperty<Any?, T> {
+
+	var prevProp: String? = null
+	var result: T? = null
+
+	override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+		val prop: String = System.getProperty("generator.option.$name", default)
+		if (prevProp == prop) return result!!
+		return resolver(prop).also { result = it }
+	}
+
+	companion object {
+
+		@JvmStatic
+		fun identity(name: String, default: String): Option<String> = Option(name, default) { it }
+	}
 }
