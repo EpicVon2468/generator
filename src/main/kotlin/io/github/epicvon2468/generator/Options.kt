@@ -2,18 +2,23 @@ package io.github.epicvon2468.generator
 
 import java.io.File
 
-import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 data object Options {
 
-	val projectName: String by Option.string(
+	var projectName: String by Option.string(
 		name = "name",
 		default = { "example" }
 	)
 	val outputDir: File by Option.file(
 		name = "out",
 		default = ::projectName
+	)
+	@get:JvmName("isPortable")
+	val portable: Boolean by Option.boolean(
+		name = "portable",
+		default = { "false" }
 	)
 
 	@JvmStatic
@@ -32,19 +37,31 @@ data object Options {
 data class Option<V>(
 	val name: String,
 	val default: () -> String,
-	val resolver: (String) -> V
-): ReadOnlyProperty<Any?, V> {
+	val serialiser: (String) -> V,
+	val deserialiser: (V) -> String = { it.toString() }
+): ReadWriteProperty<Any?, V> {
+
+	@JvmField
+	val key: String = "generator.option.$name"
 
 	private var cachedProp: String? = null
 	private var cachedValue: V? = null
 
 	override fun getValue(thisRef: Any?, property: KProperty<*>): V {
-		val prop: String = System.getProperty("generator.option.$name", default())
+		val prop: String = System.getProperty(key, default())
 		if (cachedProp == prop) return cachedValue!!
-		return resolver(prop).also { value: V ->
+		return serialiser(prop).also { value: V ->
 			cachedProp = prop
 			cachedValue = value
 		}
+	}
+
+	override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
+		if (value == null) {
+			System.clearProperty(key)
+			return
+		}
+		System.setProperty(key, deserialiser(value))
 	}
 
 	companion object {
@@ -53,14 +70,24 @@ data class Option<V>(
 		fun string(
 			name: String,
 			default: () -> String,
-			resolver: (String) -> String = { it }
-		): Option<String> = Option(name, default, resolver)
+			serialiser: (String) -> String = { it },
+			deserialiser: (String) -> String = { it }
+		): Option<String> = Option(name, default, serialiser, deserialiser)
 
 		@JvmStatic
 		fun file(
 			name: String,
 			default: () -> String,
-			resolver: (String) -> File = { File(it).absoluteFile }
-		): Option<File> = Option(name, default, resolver)
+			serialiser: (String) -> File = { File(it).absoluteFile },
+			deserialiser: (File) -> String = { it.absolutePath }
+		): Option<File> = Option(name, default, serialiser, deserialiser)
+
+		@JvmStatic
+		fun boolean(
+			name: String,
+			default: () -> String,
+			serialiser: (String) -> Boolean = { it.toBooleanStrict() },
+			deserialiser: (Boolean) -> String = { it.toString() }
+		): Option<Boolean> = Option(name, default, serialiser, deserialiser)
 	}
 }
