@@ -2,12 +2,12 @@ package io.github.epicvon2468.generator
 
 import java.io.File
 
-import kotlin.properties.ReadWriteProperty
+import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 data object Options {
 
-	var projectName: String by Option.string(
+	val projectName: String by Option.string(
 		name = "name",
 		default = { "example" }
 	)
@@ -37,9 +37,8 @@ data object Options {
 data class Option<V>(
 	val name: String,
 	val default: () -> String,
-	val serialiser: (String) -> V,
-	val deserialiser: (V) -> String = { it.toString() }
-): ReadWriteProperty<Any?, V> {
+	val serialiser: (String) -> V
+): ReadOnlyProperty<Any?, V> {
 
 	@JvmField
 	val key: String = "generator.option.$name"
@@ -56,38 +55,27 @@ data class Option<V>(
 		}
 	}
 
-	override fun setValue(thisRef: Any?, property: KProperty<*>, value: V) {
-		if (value == null) {
-			System.clearProperty(key)
-			return
-		}
-		System.setProperty(key, deserialiser(value))
-	}
-
 	companion object {
 
 		@JvmStatic
 		fun string(
 			name: String,
 			default: () -> String,
-			serialiser: (String) -> String = { it },
-			deserialiser: (String) -> String = { it }
-		): Option<String> = Option(name, default, serialiser, deserialiser)
+			serialiser: (String) -> String = { it }
+		): Option<String> = Option(name, default, serialiser)
 
 		@JvmStatic
 		fun file(
 			name: String,
 			default: () -> String,
-			serialiser: (String) -> File = { File(it).absoluteFile },
-			deserialiser: (File) -> String = { it.absolutePath }
-		): Option<File> = Option(name, default, serialiser, deserialiser)
+			serialiser: (String) -> File = { File(it).absoluteFile }
+		): Option<File> = Option(name, default, serialiser)
 
 		@JvmStatic
 		fun boolean(
 			name: String,
 			default: () -> String,
-			serialiser: (String) -> Boolean = { it.toBooleanStrict() },
-			deserialiser: (Boolean) -> String = { it.toString() }
-		): Option<Boolean> = Option(name, default, serialiser, deserialiser)
+			serialiser: (String) -> Boolean = { it.toBooleanStrict() }
+		): Option<Boolean> = Option(name, default, serialiser)
 	}
 }

@@ -5,7 +5,7 @@ fun main(args: Array<String>) {
 	println(Options.portable)
 	println(Options.projectName)
 	println(Options.outputDir)
-	Options.projectName = "foo"
+	System.setProperty("generator.option.name", "foo")
 	println(Options.projectName)
 	println(Options.outputDir)
 }
